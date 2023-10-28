@@ -1,0 +1,38 @@
+[package]
+name = "ergoreq"
+version = "0.1.0"
+edition = "2021"
+readme="README.md"
+description="A human-centric web request client developed based on Reqwest, supporting automatic cookie management, automatic retries, and custom middleware."
+keywords=["client","http","request","reqwest"]
+categories=["web-programming::http-client","web-programming"]
+license="MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "^0", default-features = false, features = [
+    "json",
+    "multipart",
+] }
+paste = { version = "^1" }
+serde = "^1"
+http = "^0"
+cookie = { version = "^0", features = ["percent-encode"] }
+dashmap = { version = "^5", features = ["inline", "serde"] }
+chrono = "^0"
+url = "^2"
+anyhow = "^1"
+async-trait = "^0"
+retry-policies = "^0"
+
+[dev-dependencies]
+tokio = {version = "^1",features = ["full"]}
+reqwest = {version = "^0",features = ["rustls-tls"], default-features = false}
+serde_json = "^1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = {version = "^1",features = ["time"]}
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-timer = "^0"
