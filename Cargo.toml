@@ -7,6 +7,7 @@ description="A human-centric web request client developed based on Reqwest, supp
 keywords=["client","http","request","reqwest"]
 categories=["web-programming::http-client","web-programming"]
 license="MIT"
+repository="https://github.com/whl2606555/ergoreq"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
