@@ -89,6 +89,7 @@ pub use crate::error::Error;
 pub use crate::error::Result;
 pub use async_trait::async_trait;
 pub use cookie as cookie_process;
+pub use dashmap;
 pub use http;
-pub use url;
 pub use retry_policies;
+pub use url;
