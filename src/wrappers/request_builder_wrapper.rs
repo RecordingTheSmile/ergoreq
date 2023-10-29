@@ -21,7 +21,7 @@ pub struct ErgoRequestBuilder {
     inner: RequestBuilder,
     cookie_store: Option<Arc<dyn CookieContainer + 'static>>,
     url: String,
-    retry_policy: Option<Box<dyn RetryPolicy + Send + Sync + 'static>>,
+    retry_policy: Option<Arc<dyn RetryPolicy + Send + Sync + 'static>>,
     max_redirect_times: u16,
     client: reqwest::Client,
     client_middleware: Box<[Arc<dyn Middleware>]>,
@@ -37,13 +37,14 @@ impl ErgoRequestBuilder {
         url: String,
         client: reqwest::Client,
         global_redirect_time: u16,
+        global_retry_policy: Option<Arc<dyn RetryPolicy + Send + Sync + 'static>>,
         middlewares: Box<[Arc<dyn Middleware>]>,
     ) -> Self {
         Self {
             inner: raw_builder,
             cookie_store,
             url,
-            retry_policy: None,
+            retry_policy: global_retry_policy,
             max_redirect_times: global_redirect_time,
             client,
             client_middleware: middlewares,
@@ -164,7 +165,7 @@ impl ErgoRequestBuilder {
         if retry_times == 0 {
             self.retry_policy = None;
         } else {
-            self.retry_policy = Some(Box::new(
+            self.retry_policy = Some(Arc::new(
                 ExponentialBackoff::builder().build_with_max_retries(retry_times.into()),
             ));
         }
@@ -180,7 +181,7 @@ impl ErgoRequestBuilder {
     where
         T: RetryPolicy + Send + Sync + 'static,
     {
-        self.retry_policy = Some(Box::new(retry_policy));
+        self.retry_policy = Some(Arc::new(retry_policy));
         self
     }
 
@@ -361,6 +362,7 @@ impl ErgoRequestBuilder {
                 self.url.to_owned(),
                 self.client.to_owned(),
                 self.max_redirect_times,
+                self.retry_policy.to_owned(),
                 self.client_middleware.to_owned(),
             ))
         })

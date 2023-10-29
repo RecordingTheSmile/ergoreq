@@ -1,12 +1,13 @@
 [package]
 name = "ergoreq"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 readme="README.md"
 description="A human-centric web request client developed based on Reqwest, supporting automatic cookie management, automatic retries, and custom middleware."
 keywords=["client","http","request","reqwest"]
 categories=["web-programming::http-client","web-programming"]
 license="MIT"
+repository="https://github.com/whl2606555/ergoreq"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

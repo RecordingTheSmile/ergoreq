@@ -5,11 +5,12 @@ use chrono::Utc;
 use http::Extensions;
 use reqwest::{Request, Response};
 use retry_policies::{RetryDecision, RetryPolicy};
+use std::sync::Arc;
 
-pub(crate) struct AutoRetryMiddleware(Box<dyn RetryPolicy + Send + Sync + 'static>);
+pub(crate) struct AutoRetryMiddleware(Arc<dyn RetryPolicy + Send + Sync + 'static>);
 
 impl AutoRetryMiddleware {
-    pub fn new(policy: Box<dyn RetryPolicy + Send + Sync + 'static>) -> Self {
+    pub fn new(policy: Arc<dyn RetryPolicy + Send + Sync + 'static>) -> Self {
         Self(policy)
     }
 }

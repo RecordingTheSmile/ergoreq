@@ -13,11 +13,20 @@ pub trait CookieContainer: Send + Sync {
     fn to_header_value(&self, url: &reqwest::Url) -> Vec<String>;
 }
 
-type CookieMap = DashMap<String, Cookie<'static>>;
+/// key: cookie name
+///
+/// value: [`Cookie`]
+pub type CookieMap = DashMap<String, Cookie<'static>>;
 
-type PathMap = DashMap<String, CookieMap>;
+/// key: path
+///
+/// value: [`CookieMap`]
+pub type PathMap = DashMap<String, CookieMap>;
 
-type DomainMap = DashMap<String, PathMap>;
+/// key: domain
+///
+/// value: [`PathMap`]
+pub type DomainMap = DashMap<String, PathMap>;
 
 /// Default `CookieContainer` implementation
 pub struct ErgoCookieContainer {
@@ -70,6 +79,13 @@ impl ErgoCookieContainer {
         }
 
         false
+    }
+
+    /// Get a mutable reference to inner storage.
+    ///
+    /// You can edit cookies in inner storage directly.
+    pub fn get_storage_mut(&mut self) -> &mut DomainMap {
+        &mut self.store
     }
 
     fn remove_target_cookie(&self, cookie: Cookie, url: &reqwest::Url) {

@@ -1,6 +1,8 @@
 use std::{ops::Deref, sync::Arc};
 
 use reqwest::{IntoUrl, Method};
+use retry_policies::policies::ExponentialBackoff;
+use retry_policies::RetryPolicy;
 
 use crate::middleware::middleware::Middleware;
 
@@ -13,6 +15,7 @@ pub struct ErgoClient {
     inner: reqwest::Client,
     middlewares: Vec<Arc<dyn Middleware>>,
     global_auto_redirect: u16,
+    global_retry_policy: Option<Arc<dyn RetryPolicy + Send + Sync + 'static>>,
 }
 
 macro_rules! impl_method_wrap {
@@ -22,7 +25,7 @@ macro_rules! impl_method_wrap {
             #[doc = "Return a `ErgoRequestBuilder` for `" $method "` method."]
             pub fn $method<U: reqwest::IntoUrl>(&self,url: U)->crate::wrappers::request_builder_wrapper::ErgoRequestBuilder{
                 let url_str = url.as_str().to_owned();
-                crate::wrappers::request_builder_wrapper::ErgoRequestBuilder::new(self.inner.$method(url), None,url_str, self.inner.to_owned(), self.global_auto_redirect, self.middlewares.to_owned().into_boxed_slice())
+                crate::wrappers::request_builder_wrapper::ErgoRequestBuilder::new(self.inner.$method(url), None,url_str, self.inner.to_owned(), self.global_auto_redirect, self.global_retry_policy.to_owned(), self.middlewares.to_owned().into_boxed_slice())
         }
     }
     )+
@@ -50,6 +53,7 @@ impl ErgoClient {
             inner: client,
             middlewares: vec![],
             global_auto_redirect: 0,
+            global_retry_policy: None,
         }
     }
 
@@ -90,6 +94,28 @@ impl ErgoClient {
         self
     }
 
+    /// Set a global retry count. If you want to set a global `RetryPolicy`,
+    /// use [`ErgoClient::with_retry_policy`]
+    pub fn with_retry_count(mut self, count: u16) -> Self {
+        if count == 0 {
+            self.global_retry_policy = None;
+        } else {
+            self.global_retry_policy = Some(Arc::new(
+                ExponentialBackoff::builder().build_with_max_retries(count as u32),
+            ));
+        }
+        self
+    }
+
+    /// Set a global retry policy.
+    pub fn with_retry_policy<T>(mut self, retry_policy: T) -> Self
+    where
+        T: RetryPolicy + Send + Sync + 'static,
+    {
+        self.global_retry_policy = Some(Arc::new(retry_policy));
+        self
+    }
+
     impl_method_wrap!(get, post, put, patch, delete, head);
 
     /// Build an `ErgoRequestBuilder` with given `Method` and `Url`
@@ -101,6 +127,7 @@ impl ErgoClient {
             url_str,
             self.inner.to_owned(),
             self.global_auto_redirect,
+            self.global_retry_policy.to_owned(),
             self.middlewares.to_owned().into_boxed_slice(),
         )
     }
