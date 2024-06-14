@@ -8,6 +8,7 @@ use serde::Serialize;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::instrument;
 
 use crate::cookie::cookie_container::CookieContainer;
 
@@ -98,7 +99,7 @@ impl ErgoRequestBuilder {
     /// `Extensions` can be get and pass some useful information for middlewares.
     pub fn with_extension<T>(mut self, extension: T) -> Self
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + 'static + Clone,
     {
         self.extensions.insert(extension);
         self
@@ -316,6 +317,7 @@ impl ErgoRequestBuilder {
     ///
     /// Please notice that this method returns `ergoreq::error::Result` instead of
     /// `reqwest::Error`
+    #[instrument(skip(self))]
     pub fn send(self) -> impl Future<Output = crate::error::Result<Response>> {
         async move {
             let mut my_self = self;

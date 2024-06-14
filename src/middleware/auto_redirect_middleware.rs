@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use http::{Extensions, Method};
 use reqwest::{Request, Response};
+use tracing::instrument;
 
 use super::middleware::{Middleware, Next};
 
@@ -15,6 +16,7 @@ impl AutoRedirectMiddleware {
 
 #[async_trait]
 impl Middleware for AutoRedirectMiddleware {
+    #[instrument(skip(self, ext, next))]
     async fn handle(
         &self,
         req: Request,
@@ -40,6 +42,10 @@ impl Middleware for AutoRedirectMiddleware {
         loop {
             if current_redirect_count >= self.0 {
                 if response.status().is_redirection() {
+                    tracing::debug!(
+                        "Too many redirect for this request: {} time(s).",
+                        current_redirect_count
+                    );
                     return Err(crate::Error::TooManyRedirect(current_redirect_count));
                 }
                 break;
@@ -68,10 +74,23 @@ impl Middleware for AutoRedirectMiddleware {
                     .build()?;
             }
 
+            tracing::debug!("Redirect to: {}", new_url);
+
             let new_method = match response.status().as_u16() {
                 307 | 308 => origin_method.to_owned(),
                 _ => Method::GET,
             };
+
+            match new_method {
+                Method::GET => (),
+                _ => {
+                    tracing::debug!(
+                        "Redirect method is {}, because response status this time is: {}",
+                        new_method,
+                        response.status()
+                    );
+                }
+            }
 
             let new_request = http::Request::builder()
                 .uri::<http::uri::Uri>(new_url.into())
@@ -79,7 +98,10 @@ impl Middleware for AutoRedirectMiddleware {
 
             let mut new_request = match new_method {
                 Method::GET => new_request.body(vec![])?,
-                _ => new_request.body(origin_body.to_owned().unwrap_or_default())?,
+                _ => {
+                    tracing::debug!("Request body cloned, because the redirect method is not GET.");
+                    new_request.body(origin_body.to_owned().unwrap_or_default())?
+                }
             };
 
             *new_request.headers_mut() = origin_headers.to_owned();

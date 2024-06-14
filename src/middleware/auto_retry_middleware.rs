@@ -1,11 +1,11 @@
 use super::middleware::Middleware;
 use crate::middleware::middleware::Next;
 use async_trait::async_trait;
-use chrono::Utc;
 use http::Extensions;
 use reqwest::{Request, Response};
 use retry_policies::{RetryDecision, RetryPolicy};
-use std::sync::Arc;
+use std::{sync::Arc, time::SystemTime};
+use tracing::instrument;
 
 pub(crate) struct AutoRetryMiddleware(Arc<dyn RetryPolicy + Send + Sync + 'static>);
 
@@ -17,6 +17,7 @@ impl AutoRetryMiddleware {
 
 #[async_trait]
 impl Middleware for AutoRetryMiddleware {
+    #[instrument(skip(self, ext, next))]
     async fn handle(
         &self,
         req: Request,
@@ -29,7 +30,7 @@ impl Middleware for AutoRetryMiddleware {
             Some(req) => req,
             None => return next.run(req, ext).await,
         };
-
+        let request_start_time = SystemTime::now();
         let mut response = next.run(req, ext).await;
         loop {
             if let Ok(response) = response {
@@ -41,21 +42,20 @@ impl Middleware for AutoRetryMiddleware {
                     _ => (),
                 };
                 current_retry_times += 1;
-                match self.0.should_retry(current_retry_times) {
+                match self.0.should_retry(request_start_time, current_retry_times) {
                     RetryDecision::Retry { execute_after } => {
-                        let should_wait_for = execute_after - Utc::now();
+                        let should_wait_for = match execute_after.duration_since(SystemTime::now())
+                        {
+                            Ok(duration) => duration,
+                            Err(_) => std::time::Duration::from_secs(0),
+                        };
                         if !should_wait_for.is_zero() {
                             #[cfg(not(target_arch = "wasm32"))]
-                            tokio::time::sleep(
-                                should_wait_for.to_std().map_err(crate::Error::from)?,
-                            )
-                            .await;
+                            tokio::time::sleep(should_wait_for).await;
                             #[cfg(target_arch = "wasm32")]
-                            wasm_timer::Delay::new(
-                                should_wait_for.to_std().map_err(crate::Error::from)?,
-                            )
-                            .await
-                            .expect("failed sleeping");
+                            wasm_timer::Delay::new(should_wait_for)
+                                .await
+                                .expect("failed sleeping");
                         }
                         if let Some(req) = origin_req.try_clone() {
                             response = client.execute(req).await.map_err(crate::Error::from);
