@@ -5,6 +5,7 @@ use http::Extensions;
 use reqwest::{Request, Response};
 use retry_policies::{RetryDecision, RetryPolicy};
 use std::{sync::Arc, time::SystemTime};
+use tracing::instrument;
 
 pub(crate) struct AutoRetryMiddleware(Arc<dyn RetryPolicy + Send + Sync + 'static>);
 
@@ -16,6 +17,7 @@ impl AutoRetryMiddleware {
 
 #[async_trait]
 impl Middleware for AutoRetryMiddleware {
+    #[instrument(skip(self, ext, next))]
     async fn handle(
         &self,
         req: Request,

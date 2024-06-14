@@ -26,6 +26,7 @@ url = "^2"
 anyhow = "^1"
 async-trait = "^0"
 retry-policies = "^0"
+tracing = "^0"
 
 [dev-dependencies]
 tokio = { version = "^1", features = ["full"] }

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use http::{Extensions, HeaderValue};
 use reqwest::{Request, Response};
 use std::sync::Arc;
+use tracing::instrument;
 
 #[async_trait]
 pub trait Middleware: 'static + Send + Sync {
@@ -42,6 +43,7 @@ impl<'a> Next<'a> {
         }
     }
 
+    #[instrument(skip_all)]
     fn store_cookies(cookie_store: Option<Arc<dyn CookieContainer>>, response: &Response) {
         if let Some(store) = cookie_store {
             let cookie_headers = response
@@ -50,15 +52,18 @@ impl<'a> Next<'a> {
                 .iter()
                 .filter_map(|v| v.to_str().ok());
             let parsed_cookies = ErgoCookieParser::parse_set_cookie_header(cookie_headers);
+            tracing::debug!("Parsed cookies: {:?}", parsed_cookies);
             store.store_from_response(parsed_cookies, response.url());
         }
     }
 
+    #[instrument(skip_all)]
     fn set_cookie_header(cookie_store: Option<Arc<dyn CookieContainer>>, request: &mut Request) {
         if let Some(cookie_store) = cookie_store {
             let cookie_value = cookie_store.to_header_value(request.url());
             let header_value = HeaderValue::from_str(&cookie_value.join("; "));
             if let Ok(header_value) = header_value {
+                tracing::debug!("Will set cookie header: {:?}", header_value);
                 request
                     .headers_mut()
                     .insert(http::header::COOKIE, header_value);
@@ -69,6 +74,7 @@ impl<'a> Next<'a> {
     /// Acquired the actual response.
     ///
     /// Run this method will stop running middlewares left for this request permanently.
+    #[instrument(skip(self))]
     pub async fn run_without_middleware(self, mut req: Request) -> crate::error::Result<Response> {
         Self::set_cookie_header(self.cookie_store.to_owned(), &mut req);
         let response = self
@@ -87,12 +93,14 @@ impl<'a> Next<'a> {
     /// Pass this `Request` to next middleware, wait for `Response`
     ///
     /// You can pass some useful information by adding [`http::Extensions`] in `extensions` parameter
+    #[instrument(skip(self, extensions))]
     pub async fn run(
         mut self,
         mut req: Request,
         extensions: &'a mut Extensions,
     ) -> crate::error::Result<Response> {
         if let Some((current, left)) = self.middlewares.split_first() {
+            tracing::debug!("Run request with middleware");
             self.middlewares = left;
             let cookie_container = self.cookie_store.to_owned();
             Self::set_cookie_header(cookie_container.to_owned(), &mut req);
@@ -103,6 +111,7 @@ impl<'a> Next<'a> {
             Self::store_cookies(cookie_container, &response);
             Ok(response)
         } else {
+            tracing::debug!("No middleware found, will run without middleware");
             self.run_without_middleware(req).await
         }
     }

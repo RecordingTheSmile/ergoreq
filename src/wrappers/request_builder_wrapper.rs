@@ -8,6 +8,7 @@ use serde::Serialize;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::instrument;
 
 use crate::cookie::cookie_container::CookieContainer;
 
@@ -316,6 +317,7 @@ impl ErgoRequestBuilder {
     ///
     /// Please notice that this method returns `ergoreq::error::Result` instead of
     /// `reqwest::Error`
+    #[instrument(skip(self))]
     pub fn send(self) -> impl Future<Output = crate::error::Result<Response>> {
         async move {
             let mut my_self = self;
