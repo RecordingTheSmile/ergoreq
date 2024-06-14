@@ -1,6 +1,6 @@
 [package]
 name = "ergoreq"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 readme = "README.md"
 description = "A human-centric web request client developed based on Reqwest, supporting automatic cookie management, automatic retries, and custom middleware."
