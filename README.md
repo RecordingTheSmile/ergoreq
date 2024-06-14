@@ -7,6 +7,7 @@ A human-centric web request client developed based on Reqwest.
 * Automatically manage cookies per-request (instead of per-client)
 * Automatically redirect management per-request
 * Supports all features of `reqwest`
+* `tracing` support
 * Well tested
 
 # Example
@@ -63,7 +64,7 @@ A human-centric web request client developed based on Reqwest.
 More examples can be found in [examples](examples) directory.
 
 # Requirement
-Same as reqwest.
+The tested `reqwest` version is 0.12. Using `reqwest` older than 0.12 may cause compile error.
 
 # License
 MIT
