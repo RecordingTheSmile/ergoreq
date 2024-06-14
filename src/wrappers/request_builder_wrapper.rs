@@ -98,7 +98,7 @@ impl ErgoRequestBuilder {
     /// `Extensions` can be get and pass some useful information for middlewares.
     pub fn with_extension<T>(mut self, extension: T) -> Self
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + 'static + Clone,
     {
         self.extensions.insert(extension);
         self
