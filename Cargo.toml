@@ -1,13 +1,13 @@
 [package]
 name = "ergoreq"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 readme = "README.md"
 description = "A human-centric web request client developed based on Reqwest, supporting automatic cookie management, automatic retries, and custom middleware."
 keywords = ["client", "http", "request", "reqwest"]
 categories = ["web-programming::http-client", "web-programming"]
 license = "MIT"
-repository = "https://github.com/whl2606555/ergoreq"
+repository = "https://github.com/RecordingTheSmile/ergoreq"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,7 +20,7 @@ paste = { version = "^1" }
 serde = "^1"
 http = "^1"
 cookie = { version = "^0", features = ["percent-encode"] }
-dashmap = { version = "^5", features = ["inline", "serde"] }
+dashmap = { version = "^6", features = ["inline", "serde"] }
 chrono = "^0"
 url = "^2"
 anyhow = "^1"

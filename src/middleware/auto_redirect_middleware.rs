@@ -24,42 +24,57 @@ impl Middleware for AutoRedirectMiddleware {
         next: Next<'_>,
     ) -> crate::error::Result<Response> {
         let mut current_redirect_count = 0;
+
+        // Save the origin body, in case the redirect method is not GET.
         let origin_body = req
             .body()
             .and_then(|v| v.as_bytes())
             .and_then(|v| Some(v.to_vec()));
+
+        // Save other request information.
         let origin_headers = req.headers().to_owned();
         let origin_method = req.method().to_owned();
         let origin_url = req.url().to_owned();
+
+        // Get client instance.
         let inner_client = next.get_inner_client_owned();
 
         let mut response = next.run(req, ext).await?;
 
-        if !response.status().is_redirection() {
-            return Ok(response);
-        }
-
         loop {
+            // If the response is not a redirection, return the response directly.
+            if !response.status().is_redirection() {
+                return Ok(response);
+            }
+
+            // Judge whether the number of redirects exceeds the maximum number of redirects.
             if current_redirect_count >= self.0 {
                 if response.status().is_redirection() {
                     tracing::debug!(
                         "Too many redirect for this request: {} time(s).",
                         current_redirect_count
                     );
-                    return Err(crate::Error::TooManyRedirect(current_redirect_count));
+                    return Err(crate::Error::TooManyRedirect(
+                        origin_url,
+                        current_redirect_count,
+                    ));
                 }
                 break;
             }
-            let new_url = response
-                .headers()
-                .get(http::header::LOCATION)
-                .and_then(|v| v.to_str().ok());
 
-            // if new_url is invalid or is empty, then stop trying to redirect
-            let new_url_str = match new_url {
-                Some(url) => url,
-                None => return Ok(response),
-            };
+            // Get the new URL.
+            let new_url_raw = response.headers().get(http::header::LOCATION);
+
+            let new_url_str;
+
+            if let Some(redirect_url) = new_url_raw {
+                new_url_str = match redirect_url.to_str() {
+                    Ok(url) => url,
+                    Err(_) => return Err(crate::Error::RedirectLocationInvalid),
+                }
+            } else {
+                return Err(crate::Error::RedirectLocationEmpty);
+            }
 
             let mut new_url: http::Uri = new_url_str
                 .parse()
