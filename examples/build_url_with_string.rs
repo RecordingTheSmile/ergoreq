@@ -1,5 +1,6 @@
 use ergoreq::cookie::cookie_container::ErgoCookieContainer;
 use ergoreq::wrappers::client_wrapper::ErgoClient;
+use ergoreq::{ErgoStringToRequestExt, StringUrlBuilderTrait};
 use reqwest::redirect::Policy;
 use std::sync::Arc;
 use std::time::Duration;
@@ -21,15 +22,16 @@ async fn main() {
     let cookie_store = Arc::new(ErgoCookieContainer::new_secure());
 
     // Each request will automatically set and store cookie.
-    client
-        .get("https://httpbin.org/cookies/set/test_cookie/test_success")
+    "https://httpbin.org/cookies/set/test_cookie/test_success"
+        .http_get(&client)
         .with_cookie_store_ref(&cookie_store)
         .send()
         .await
         .unwrap();
 
-    client
-        .get("https://httpbin.org/cookies/set/test_cookie_1/test_success_1")
+    "https://httpbin.org"
+        .add_url_segments(&["cookies", "set", "test_cookie_1", "test_success_1"])
+        .http_get(&client)
         .with_cookie_store_ref(&cookie_store)
         .send()
         .await

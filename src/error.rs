@@ -3,7 +3,9 @@ use chrono::OutOfRangeError;
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
-    TooManyRedirect(u64),
+    TooManyRedirect(url::Url, u64),
+    RedirectLocationInvalid,
+    RedirectLocationEmpty,
     Http(http::Error),
     Custom(Box<dyn std::error::Error + Send + Sync + 'static>),
     InvalidRedirectUrl(String),
@@ -18,12 +20,16 @@ impl std::fmt::Display for Error {
             Error::Reqwest(inner) => write!(f, "Reqwest error: {:?}", inner),
             Error::Custom(inner) => write!(f, "Custom error: {:?}", inner),
             Error::Http(inner) => write!(f, "Build http error: {:?}", inner),
-            Error::TooManyRedirect(redirect_count) => write!(
+            Error::TooManyRedirect(origin_url, redirect_count) => write!(
                 f,
-                "Too many redirect for this request: {redirect_count} time(s)."
+                "Too many redirect for request to '{origin_url}': {redirect_count} time(s)."
             ),
             Error::InvalidRedirectUrl(url) => write!(f, "The redirect url is invalid: {url}"),
             Error::Internal(e) => write!(f, "Ergo internal error: {:?}", e),
+            Error::RedirectLocationInvalid => {
+                write!(f, "The redirect location is invalid")
+            }
+            Error::RedirectLocationEmpty => write!(f, "The redirect location is empty"),
         }
     }
 }

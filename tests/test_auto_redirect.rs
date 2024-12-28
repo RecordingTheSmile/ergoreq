@@ -27,8 +27,8 @@ mod test_auto_redirect {
             .unwrap_err();
 
         match response {
-            Error::TooManyRedirect(e) => {
-                assert_eq!(e, 5)
+            Error::TooManyRedirect(_, counts) => {
+                assert_eq!(counts, 5)
             }
             _ => panic!("response doesn't report an TooManyRedirectError"),
         }

@@ -46,6 +46,11 @@ impl ErgoCookieContainer {
         }
     }
 
+    /// Create a new `CookieContainer` with default secure settings.
+    pub fn new_secure() -> Self {
+        Self::new(false, false, false)
+    }
+
     /// judge if two domain match cookie domain policy
     ///
     /// ## Match condition

@@ -38,7 +38,7 @@ impl Middleware for AutoRetryMiddleware {
             } else {
                 let error = response.unwrap_err();
                 match error {
-                    crate::Error::TooManyRedirect(_) => return Err(error),
+                    crate::Error::TooManyRedirect(_, _) => return Err(error),
                     _ => (),
                 };
                 current_retry_times += 1;

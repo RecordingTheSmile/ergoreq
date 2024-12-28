@@ -172,5 +172,5 @@ mod test_client_wrapper {
         };
     }
 
-    impl_method_test!(get, post, put, patch, delete, head);
+    impl_method_test!(get, post, put, delete, head, patch);
 }
