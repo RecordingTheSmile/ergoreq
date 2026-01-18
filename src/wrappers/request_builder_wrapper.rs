@@ -258,12 +258,6 @@ impl ErgoRequestBuilder {
         self
     }
 
-    /// See [`RequestBuilder::fetch_mode_no_cors`]
-    pub fn fetch_mode_no_cors(mut self) -> Self {
-        self.inner = self.inner.fetch_mode_no_cors();
-        self
-    }
-
     /// See [`RequestBuilder::multipart`]
     ///
     /// ## Notice
