@@ -88,7 +88,7 @@ More examples can be found in [examples](examples) directory.
 
 # Requirement
 
-The tested `reqwest` version is 0.12. Using `reqwest` older than 0.12 may cause compile error.
+The current version supports `reqwest` version `^0.13`.
 
 # License
 
